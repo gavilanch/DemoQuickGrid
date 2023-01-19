@@ -1,0 +1,87 @@
+﻿@page "/"
+@using DemorGridESP.Shared;
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>Index</PageTitle>
+
+<p>
+    @Mensaje
+</p>
+
+<QuickGrid Items="@Personas" @ref="grid" Pagination="@pagination">
+    <PropertyColumn Property="@(p => p.Id)" Sortable="false" />
+    <PropertyColumn Property="@(p => p.Nombre)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Apellido.ToUpper())" Sortable="true" Title="Apellido" />
+    <PropertyColumn Property="@(p => p.FechaNacimiento)" Sortable="true" Format="dd-MM-yyyy" />
+    <PropertyColumn Property="@(p => p.Puntuacion)" Sortable="true" Title="Puntuación"
+                    Align="Align.Right" />
+    <PropertyColumn Property="@(p => p.Activo)" Sortable="true">
+        <ColumnOptions>
+            <label>
+                <input type="checkbox" @bind="soloActivos" @bind:after="Filtrar" /> Solo activos
+            </label>
+        </ColumnOptions>
+    </PropertyColumn>
+    <TemplateColumn Title="Acciones">
+        <button class="btn btn-primary" @onclick="@(() => Editar(context))">Editar</button>
+    </TemplateColumn>
+</QuickGrid>
+
+<Paginator Value="@pagination" />
+
+@code {
+    public IQueryable<Persona> MaestroPersonas { get; set; } = null!;
+    public IQueryable<Persona> Personas { get; set; } = null!;
+    public string? Mensaje { get; set; }
+    QuickGrid<Persona>? grid;
+    bool soloActivos = false;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected override void OnInitialized()
+    {
+        MaestroPersonas = ObtenerPersonas().AsQueryable();
+        Personas = MaestroPersonas;
+    }
+
+    public async Task Filtrar()
+    {
+        if (soloActivos)
+        {
+            Personas = MaestroPersonas.Where(p => p.Activo);
+        }
+        else
+        {
+            Personas = MaestroPersonas;
+        }
+
+        await grid!.RefreshDataAsync();
+    }
+
+
+    public void Editar(Persona persona)
+    {
+        Mensaje = "Editando a " + persona.Nombre;
+    }
+
+
+    public List<Persona> ObtenerPersonas()
+    {
+        var resultado = new List<Persona>();
+
+        for (int i = 1; i <= 100; i++)
+        {
+            resultado.Add(new Persona
+                {
+                    Id = i,
+                    Nombre = Faker.Name.First(),
+                    Apellido = Faker.Name.Last(),
+                    FechaNacimiento = Faker.Identification.DateOfBirth(),
+                    Activo = Faker.Boolean.Random(),
+                    Puntuacion = Faker.RandomNumber.Next(100)
+                });
+
+        }
+
+        return resultado;
+    }
+}
